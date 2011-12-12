@@ -125,7 +125,7 @@ counterparts.
 \subsection{Scale and Performance in the Denali Isolation Kernel}
 \label{sec:summaries/denali}
 
-Three years after VMWare's appearance, Denali sought to provide a virtualization
+Three years after VMWare's appearance, Denali \cite{ref:denali} sought to provide a virtualization
 solution design with two goals in mind, scalability and security. Denali's authors
 envisioned a separation between the management of physical hardware and the management
 of software services, transforming how internet services could be deployed. Such a system 
@@ -144,7 +144,7 @@ on top of x86 hardware. The kernel is designed to host many untrusted applicatio
 and require little data sharing. Denali multiplexes between the guest operating systems and isolates them
 using private virtualized namespaces. Some special privileges, 
 like dowloading a remote VM or loading initial disk images, are handled by a supervisor VM.
-Since the x86 ISA includes instructioins whose behavior differs
+Since the x86 ISA includes instructions whose behavior differs
 in user and kernel mode, Denali provides a subset of the x86 ISA as well as two virtual instructions.
 First, idle-with-timeout lets VMs halt their execution for a bounded amount of physical time or until
 an interrupt arrives for the VM in return for a higher priority, 
