@@ -1,17 +1,20 @@
-\documentclass[10pt]{article}
+\documentclass[letterpaper, twocolumn]{article}
 \pagestyle{plain}
 
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{multicol}
 \usepackage{url}
-
-\begin{document}
+\usepackage{graphicx}
 
 \title{CMSC818s: Project 3 \\
 A Brief Survey of Modern Virtualization Research}
 \author{}
 \date{}
 
+\begin{document}
+
+\twocolumn[
+\begin{@twocolumnfalse}
 \maketitle
 
 \vspace{-2cm}
@@ -27,7 +30,8 @@ Department of Computer Science \\
 University of Maryland, College Park
 \end{center}
 
-\begin{multicols*}{2}
+\end{@twocolumnfalse}
+]
 
 \section{Introduction}
 \label{sec:intro}
@@ -60,10 +64,11 @@ of future work.
 The rest of the paper is structured as follows: in Section \ref{sec:background}
 we provide background information on the history of virtualization and the
 sorts of techniques which are utilized today.  Section \ref{sec:summaries}
-presents summaries of three recent virtualization papers from the
-9\textsuperscript{th} USENIX Symposium on Operating Systems Design
-and Implementation, as well as a fourth from (TBD!).  Section
-\ref{sec:relationships} analyses these papers in terms of how they
+presents summaries of a foundation virtualization paper from the
+5\textsuperscript{th} USENIX Symposium on Operating Systems Design
+and Implementation, as well as three recent papers from the virtualization
+session of the same Symposium in 2010.  Section \ref{sec:relns} attempts
+to analyze and classify these papers in terms of how they
 relate to each other and how they approach the larger problem space.
 Finally, in Section \ref{sec:conclusion} we conclude by discussing our
 thoughts and opinions on the problem space as a whole, and postulate
@@ -117,6 +122,9 @@ counterparts.
 \section{Paper Summaries}
 \label{sec:summaries}
 
+\subsection{Scale and Performance in the Denali Isolation Kernel}
+\label{sec:summaries/denali}
+
 \subsection{The Turtles Project: Design and Implementation of Nested Virtualization}
 \label{sec:summaries/turtles}
 
@@ -151,9 +159,20 @@ is running a guest OS at level $L_2$.  Everything running at $L_1$ and $L_2$
 has to run at the same privilege level, and only $L_0$ is privileged enough
 to interact with the hardware.  Essentially, levels $L_1$ through $L_n$ only
 exist logically, and in reality they are all multiplexed to be running directly
-on top of $L_0$.  All traps generated at $L_2$ go immediately to $L_0$, which
+on top of $L_0$ (see Figure \ref{fig:turtles-multiplex}).  All traps generated at
+$L_2$ go immediately to $L_0$, which
 may handle them itself, or forward them back to $L_1$ for handling if hardware
 interaction is not required.
+
+\begin{figure*}[t]
+	\begin{center}
+		\includegraphics[width=4in]{images/turtles.png}
+	\end{center}
+	\caption{The Turtles hypervisor maintains logical nested virtualization, but
+		in reality multiplexes all levels of nesting into $L_1$. (Figure courtesy
+		of \cite{ref:turtles})}
+	\label{fig:turtles-multiplex}
+\end{figure*}
 
 There are two difficult problems here that turtles provides a unique solution for.
 The first involves page tables for the MMU.  In a nested model, virtual addresses for $L_2$
@@ -229,7 +248,18 @@ other guests).  The algorithm uses a ``novel, lightweight'' tagging scheme to
 achieve this despite fluctuation in total capacity.  Previous attempts to solve
 this problem were not able to achieve both of these goals simultaneously.
 
-The mClock algorithm works by assigning numerical tags to each queued request.
+\begin{figure}[t]
+	\begin{center}
+		\includegraphics[width=2.5in]{images/mclock.png}
+	\end{center}
+	\caption{The mClock algorithm works by tagging requests with a tag for
+		reservations, weights, and reservations, and then executing requests
+		in order of their tags.  (Figure courtest of \cite{ref:mclock})}
+	\label{fig:mclock-alg}
+\end{figure}
+
+The mClock algorithm (see Figure \ref{fig:mclock-alg}) works by assigning numerical tags to each
+queued request.
 Essentially, tags for VM $i$ with proportional weight $w_i$ will be spaced by $1/w_i$.
 Requests will be executed in the order of their assigned tags, which ensures that
 VM $i$ receieves his proportional share.  This approach requires a global clock
@@ -349,7 +379,8 @@ The paper proceeds to rigorously evaluate the performance of Xen Clocksource
 using NTP against RADClock, both in dependent and independent modes of
 operation, and in a variety of different system conditions.  The conclusion
 seems to be that RADClock is generally unaffected by the errors and
-drift that plague clocksource.  This is especially clear in a series of
+drift that plague clocksource (see Figure \ref{fig:time-eval}).
+This is especially clear in a series of
 experiments conducted involving VM migrations, where ``migration shock''
 pushes the Independent Clocksource clock into a state of instability that
 takes nearly 20 minutes to correct, while dependent RADClock converges
@@ -359,14 +390,212 @@ less affected by high contention for the network and system resources,
 making it a better solution for the problem of timekeeping in the
 context of virtualization.
 
-\subsection{Paper 4 - TBD}
-\label{sec:summaries/tbd}
+\begin{figure*}[t]
+	\caption{The RADClock algorithm consistently outperforms ntpd clocksource;
+		here, the drift in clocksource is simply due to feedback from increased
+		latency in the network. (Figure courtesy of \cite{ref:time})}
+	\label{fig:time-eval}
+	\begin{center}
+		\includegraphics[width=6in]{images/time.png}
+	\end{center}
+\end{figure*}
 
 \section{Paper Relationships}
-\label{sec:relationships}
+\label{sec:relns}
+
+As we surveyed this series of papers, we noticed that the literature
+in this area seems to neatly classify itself by \emph{motivation}.
+Many papers on virtualization come from the realm of academia, and these
+are mostly characterized by a focus on clean abstractions and solutions
+with good theoretical properties, such as fairness and strong isolation.
+Many more papers, however, originate from corporate research at places
+like Microsoft and HP Labs.  These papers seem much more interested
+in providing fast, scalable solutions using commodity hardware and
+software.  In our papers, we found a series of tensions which seemed
+to be expressing this fundamental question of motivation.  We will
+now turn our attention to these tensions, keeping in mind that the
+Turtles and mClock papers share corporate authorship, while the
+Denali and Time papers have originated in the realm of academia.
+
+\subsection{Performance and Fairness}
+\label{sec:relns/perf-fair}
+
+The most obvious tension which surfaced in the literature was a question
+of priority between performance and fairness.  Generally speaking, there is a trend
+in corporate papers to be heavily concerned with speed and efficiency, while
+academically-minded papers seem more focused on strong properties of isolation
+and guarantees of fairness between VMs.  This should not be particularly surprising,
+given the authorship; more efficient virtualization seems to be an easily reachable
+step toward greater profit.  It is worth noting, however, that in the more recent
+literature corporate papers seem to be taking note of the importance of fairness;
+we will discuss this further in Section \ref{sec:relns/scale}.
+
+Our papers are clearly divided by this metric:  Turtles is all about efficiency
+and performance, often at the cost of fairness.  The problem seems
+especially hard here because of the nested context.  It seems perfectly logical that if
+a guest OS running in $L_2$ should only receive a fraction $\alpha$ of the resources allocated
+to its host in $L_1$, which in turn should only receive a percentage $\beta$ of the machine's
+total resources, then these two fractions should compound and our guest should end up with
+$\alpha\beta$ of the total capacity available.  However, in reality Turtles multiplexes
+all guests at all levels onto $L_0$, so in many ways the guest OS and its hypervisor will
+be treated as siblings rather than a parent and child.  Multi-level device assignment
+for Port I/O and Memory-mapped I/O is particularly agnostic to these concerns, because
+it works exactly the same way as single-level device assignment, and so doesn't care whether
+a guest runs at $L_1$ or $L_{100}$.  Furthermore, no experimentation at all is done to analyze
+the effects of this model on fairness, and the authors even make the statement that this
+is a secondary concern, and so they are content with a sort of best-effort.
+
+On the other hand, Denali and mClock are all about prioritizing fairness.  The foundational
+goal of the Denali isolation kernel is to ensure strong isolation between clients, so that
+the behavior of any particular VM cannot in any way affect another.  And the whole point of
+the mClock scheduling algorithm is to ensure that limits, reservations, and weights
+are met fairly between VMs contending for a resource.  It should be noted that neither
+of these papers particularly eschew performance as a worthy goal; rather, the view
+here seems more to be that fast performance for a particular guest doesn't really
+mean much if a malicious (or even just selfish neighbor) can somehow choke that VM
+out and make it impossible to make progress.
+
+The Time paper is somewhat agnostic to concerns of performance and fairness anyway,
+since it deals more with the abstractions presented to client applications.  We
+will turn to this next.
+
+\subsection{Paravirtualization and Full Virtualization}
+\label{sec:relns/para-full}
+
+The second tension seems to arise between the paradigms of \emph{paravirtualization}
+and \emph{full virtualization}, which were introduced in Section \ref{sec:background}.
+Corporately-funded literature seems to have an eye more toward using as much
+commodity software as possible here, for the sake of lower adoption costs, while
+academic papers seem more willing to consider modifying client software in
+appropriate situations.
+
+The split here is pretty clear as well: Denali, Xen, and Time all consider
+paravirtualization to be beneficial and even necessary in the right situations.
+In Denali, the isolation kernel presents a modified and simplified hardware abstraction
+to its clients, which cleverly allows for some big wins in efficiency and performance
+as a side effect.  Xen claims that paravirtualization is necessary to ensure fairness
+and prevent starvation in process and I/O scheduling; one could argue, however, that
+this is no longer a concern due to the advent of newer virtualization-aware hardware
+(see Section \ref{sec:relns/hard-emul}).  The Time paper goes a step further and claims that
+even with the new hardware, making the guest OS aware of the virtualized context it
+runs in is necessary to ensure the correctness of certain time-dependent applications!
+
+In contrast, the Turtles project argues for full virtualization and unmodified guest
+OSes and hypervisors.  In the paper, the argument for this goes back to the
+motivating question of efficiency, though it was unclear to us why paravirtualization
+would have any negative impact here.  But it seems also that for any sort of large-scale
+commercial deployment of server virtualization technology, the ability to use commodity
+guests would be crucial in order to make adoption easy, and we consider this to also
+be a likely factor influencing the design choice.
+
+The mClock paper doesn't really fit into these two classifications, since it mostly
+deals with the interactions between the hypervisor and its devices, rather than the hypervisor
+and its guests.  However, the paper does mention that one of the reasons this disk
+scheduling problem is so difficult is because guest OSes have their own algorithms
+for efficient disk scheduling, which generally don't play nice with each other.  If it
+were possible to modify the guest OS to disable these algorithms, so that the hypervisor
+could handle all disk scheduling decision, the difficulty of this problem could likely
+be reduced.
+
+\subsection{Hardware Support and Software Emulation}
+\label{sec:relns/hard-emul}
+
+The ``tension'' between hardware support for virtualization and the use of software
+emulation is perhaps better just described as a paradigm shift.  It seems
+that over the last decade virtualization-friendly hardware has become commonplace
+and inexpensive.  When the Xen and Denali papers were written, there was no real
+alternative, and so everything had to be done through slow, inefficient software emulation.
+But when hardware manufacturers began to produce virtualization-enabled chipsets
+like the x86, this problem essentially disappeared overnight, and it has largely
+remained out-of-scope for most of the intervening decade.
+
+However, the question of software emulation may need to be re-examined as virtualization
+research moves foward.  While hardware-enabled approaches are clearly much faster
+than any attempt to do all the work in software, it seems that it just may not be possible to do
+everything at the hardware level.  The Turtles project is a perfect example of this - there
+is no hardware support for nested levels of virtualization, and so a lot of cleverness
+is required to be able to compensate in the software without an unacceptable performance
+penalty.  We have essentially been sent back to where single-level virtualization
+solutions were a decade ago.  Some of the future work mentioned in this paper involved
+examining ways to provide architectural support for nested virtualization, but although
+we are somewhat skeptical that this will prove fruitful.  Attempting to provide
+support for an unbounded number of levels of nesting with finite hardware does
+not seem like it would be particularly successful.  It will be interesting to
+see what direction this sort of work takes in the future, and whether hardware
+designers will rise to the challenge of nested virtualization.
+
+\subsection{Scalability and the Cloud}
+\label{sec:relns/scale}
+
+The final tension we wish to consider is the question of scalability.  We have observed
+that there is a commercial interest in developing super-scalable server virtualization,
+largely because it has found such a unique niche with the market growth of cloud computing
+and infrastructure-as-a-service (IAAS).  While academic research is not uninterested in the question
+of scale or the cloud use case, we do not feel that they are as much of a driving factor in this realm.
+
+We can observe this trend in the papers we have been discussing.  The Turtles paper presents
+the motivation for nested virtualization using the argument of its suitability for
+infrastructure-as-a-service, as the two are essentially made for each other.  The mClock paper,
+although it does not particularly market itself
+for scalability, is motivated by the cloud-enabled scenario of many virtualized clients
+needing to schedule the use of a shared network disk.  Furthermore, the guarantees mClock
+makes about fairness, reservations, and proportional share are especially important
+in this scenario, as they allow IAAS providers to keep service-level agreements with
+their clients.  We find this particularly interesting, as it seems to indicate
+that in the cloud, fairness and performance may find themselves on equal footing in
+terms of importance (see Section \ref{sec:relns/perf-fair}).
+
+Interestingly, the Denali paper also has a particular eye to scalability, and a large
+portion of the evaluations section is devoted to demonstrating that the isolation kernel
+performs well even when supporting over 10,000 VMs.  However, even in Denali, scalability
+is just one goal amongst many, and the paper does not really consider applications
+to cloud computing, being several years too early.
+
+The Time paper does not really consider the question of scalability at all, being
+somwhat orthogonal to the problem of accurate timekeeping on a single VM.  The paper
+does point out that there are scalability benefits to the dependent RADClock algorithm,
+as each VM no longer needs to send out synchronization packets on the network, but can
+depend on the hypervisor to do this for all VMs that it hosts.  However, this is 
+in many ways just an added bonus, and is not really a motivational argument for the paper.
 
 \section{Conclusion}
 \label{sec:conclusion}
+
+Having examined the recent literature along these four axes of tension, it is our belief
+that a clear trend has emerged in virtualization.  We believe that as cloud computing and
+IAAS continue to take off, research in this area will continue to trend toward what
+is both popular and financially successful.  We expect that the majority of virtualization
+research will continue in the direction of full virtualization over paravirtualization,
+and that the cloud-computing/IAAS scenario will become the driving use case.
+However, we think that as a result of this, fairness and performance will no longer be
+competing ends, but will in fact become equal players.  This will be necessary in order
+for cloud providers to meet their SLAs to their consumers, and we believe fair-scheduling
+and resource-isolation research will move from its place in the shadows to the forefront
+of both corporate and academic research.
+
+As to the question of hardware support versus software emulation, we believe that as
+new directions like nested virtualization are explored, some sort of hybrid approach
+will continue to be needed.  However, we do not expect the status quo of fast hardware-enabled
+virtualization to be shaken up in the general case; it seems that performance is too critical
+in the driving cloud-based use cases, and we would be surprised to see nested virtualization
+(or any other software-hybrid approach) gaining momentum here anytime soon.
+
+Cynical though it may be, we feel that a lot of the interesting problems in virtualization
+have already been solved, at least from an academic perspective.  So much of the recent
+literature seems to be in the direction of just making things more efficient and more
+reliable for the sake of the commercialized cloud.  We have stopped asking the question,
+``can we do crazy thing $x$?'', and now are only asking ``how much faster can we make $x$ work?''
+and ``how can we make $x$ work with fewer resources?''
+This is certainly an important part of the research process for any area, but it is ostensibly
+less exciting than the ground-breaking work that was going on earlier in the decade.
+
+Of course, we cannot say with any certainty that there is not some new, groundbreaking discovery
+just waiting to be made around the corner.  Such a discovery could revitalize the field
+and take virtualization off into all sorts of new and exciting directions.  But we do feel that
+the way the problem has been framed makes it unlikely that such a new discovery could shift
+the focus away from cloud-based server virtualization.  With so much focus on making the problem
+fit into the market niche, such a new discovery would have to be truly monumental indeed -
+monumental enough that no one could possibly predict it.
 
 \begin{thebibliography}{10}
 
@@ -374,8 +603,13 @@ context of virtualization.
 
 \bibitem{ref:xen}
 	P. Barham, B. Dragovic, K. Fraser, S. Hand, T. Harris, A. Ho, R. Neugebauer,
-	I. Pratt, A. Warfield.  Xen and the Art of Virtualization.  In {\it Proc. of
+	I. Pratt, and A. Warfield.  Xen and the Art of Virtualization.  In {\it Proc. of
 	the 19\textsuperscript{th} ACM Symp. on Operating Systems Principles}, 2003.
+
+\bibitem{ref:denali}
+	A. Whitaker, M. Shaw, and S. Gribble.  Scale and Performance in the Denali Isolation
+	Kernel.  In {\it Proc. of the 5\textsuperscript{th} Symp. on Operating Systems
+	Desgin \& Implementation}, 2002.
 
 \bibitem{ref:turtles}
 	M. Ben-Yehuda, M. Day, Z. Dubitzky, M. Factor, N. Har'El, A. Gordon, A. Liguori,
@@ -396,7 +630,5 @@ context of virtualization.
 }
 
 \end{thebibliography}
-
-\end{multicols*}
 
 \end{document}
