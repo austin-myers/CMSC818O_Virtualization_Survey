@@ -125,6 +125,71 @@ counterparts.
 \subsection{Scale and Performance in the Denali Isolation Kernel}
 \label{sec:summaries/denali}
 
+Three years after VMWare's appearance, Denali sought to provide a virtualization
+solution design with two goals in mind, scalability and security. Denali's authors
+envisioned a separation between the management of physical hardware and the management
+of software services, transforming how internet services could be deployed. Such a system 
+would allow untrusted software to run on third party infrastructure, support the distribution 
+of dynamic content in delivery systems, or provide virtual hosting infrastructure.
+
+In order to meet this vision the Denali project introduced \emph{para-virtualization} in the form 
+of isolation kernels, adopted complete isolation of guest virtual machines, utilizes lightweight
+virtual machines to support over 10,000 VMs on commodity machines. However, Denali diverges from many 
+related projects by sacrificing backwards compatibility for its primary objectives, but its authors argue
+tha this design trade off is worth the benefits and suggest that legacy operating systems could be
+ported to Denali.
+
+At the high level, Denali provides an isolation kernel, a small kernel operating system, running
+on top of x86 hardware. The kernel is designed to host many untrusted applications which are isolated
+and require little data sharing. Denali multiplexes between the guest operating systems and isolates them
+using private virtualized namespaces. Some special privileges, 
+like dowloading a remote VM or loading initial disk images, are handled by a supervisor VM.
+Since the x86 ISA includes instructioins whose behavior differs
+in user and kernel mode, Denali provides a subset of the x86 ISA as well as two virtual instructions.
+First, idle-with-timeout lets VMs halt their execution for a bounded amount of physical time or until
+an interrupt arrives for the VM in return for a higher priority, 
+and secondly Denali provides a virtual instruction which VMs can use to terminate.
+
+Denali's virtual architecture and implementation adhere to a separation between mechanism and policy 
+so changes can be easily made. CPU virtualization holds a policy split into two elements, 
+a \emph{gatekeeper policy} to choose the subset of active VMs to admit into the system and 
+the \emph{scheduler policy} to switch between active VMs. For simplicity, the authors use FIFO
+and round robin in the descirbed implementation. 
+% maybe new paragraph? and expand the memory virtualization stuff?
+Denali's memory virtualization aims to keep a VM's working set in memory, so physical memory 
+is redistributed from inactive to active VMs, and swap regions for each VM are used to page its memory.
+% maybe new paragraph?
+Denali also provides a virtual ethernet NIC for each VM with queues for incoming and outgoing packets.
+Incoming packets for each VM are accumulated in the appropriate queues and are later process once the
+corresponding VM is given focus by the scheduler, whereas outgoing packets are processed in a round robin manner
+from outgoing queues. The fact that Denali's TCP/IP stack runs at the user level has its drawbacks, 
+since all packets have to cross the user/kernel boundary. However, the packet dispatch evaluation 
+suggested that cost of network virtualization was low and that the the driver was responsible for most of the
+costs of packet processing.
+% new p?
+% The Denali isolation kernel delivers interrupts in batches to VMs
+% what else to say about interrupts
+% Denali provides simple fixed size virtual disks to VMs and basic devices (keyboard, console, etc) not really important?
+
+The Denali paper provides a comprehensive evaluation of the Denali isolation kernel running
+the Ilwaco operating system with basic metrics like switching times between VMs, swap disk
+microbenchmarks, and packet dispatch latency, and TCP and HTTP throughput. Some of the most
+interesting evaluations were conducted to examine the scalability and performance of Denali.
+The authors found that batched interrupts provided a performance gain of 30\% when the number
+of VMs exceeded 800, and that using idle-with-timeout in Denali lead to higher performance as
+the number of VMs increased.
+
+However, Denali is still not free from bottlenecks, and the authors discuss two major challenges to
+Denali's performanc and scalability. First, Denali tries to reduce the amount of per-VM kernel data
+that it has too manage by no keeping information for inactive VMs, but it still requires about 81MB
+of data for 10,000 virtual machines. The authors suggest that with the growing size of memory,
+this bottleneck might be acceptable. Secondly, the paging behavior of the guest is crucial to overall performance,
+and while Denali does its best to keep VMs' working sets in memory, a misbehaving guest can severly damage the
+performance of the system. One possible solution to this problem might lie with memory management 
+and garbage collection, since ensuring good behavior and providing good locality could ameliorate this problem.
+
+% transition to present day?
+
 \subsection{The Turtles Project: Design and Implementation of Nested Virtualization}
 \label{sec:summaries/turtles}
 
