@@ -77,7 +77,7 @@ about how virtualization may evolve in the future.
 \section{Background}
 \label{sec:background}
 
-Virtualization got it's start back in the 1960s, when developers
+Virtualization techniques arose more than half a century ago in the early 1960s, when developers
 of large time-sharing systems sought ways to give each user the illusion that
 they had sole access to a private, virtual computer, despite the fact that
 many users were in fact sharing computing resources.  Once private physical
@@ -87,13 +87,13 @@ put forth in these early days lived on in work involving virtual memory
 and operating system protection paradigms.
 
 Server virtualization arrived on the scene about a decade ago, with VMWare
-appearing in 1999 and Xen in 2003.  Since then, research and commercial interest
+appearing in 1999, Denali in 2002, and Xen in 2003.  Since then, research and commercial interest
 in virtualization has sparked significantly, especially in conjunction
 with the rise of Cloud computing and Infrastructure-as-a-service.
 
 In a virtualized context, we have many \emph{virtual machines}(VM) sharing the same
 physical hardware.  In a \emph{fully virtualized} system, each VM has the illusion
-that it alone has sole access to the hardware, although in a \emph{paravirtualized}
+that it alone has sole access to the hardware, although in a \emph{para-virtualized}
 system VMs may be modified to be aware of the fact that they are virtualized.  This
 sharing of resources is possible because access to the hardware is regulated by
 a special piece of software, the \emph{virtual machine monitor} or \emph{hypervisor}.
@@ -127,18 +127,18 @@ counterparts.
 \label{sec:summaries/denali}
 
 Three years after VMWare's appearance, Denali \cite{ref:denali} sought to provide a virtualization
-solution design with two goals in mind, scalability and security. Denali's authors
+solution with two goals in mind, scalability and security. Denali's authors
 envisioned a separation between the management of physical hardware and the management
 of software services, transforming how internet services could be deployed. Such a system 
 would allow untrusted software to run on third party infrastructure, support the distribution 
-of dynamic content in delivery systems, or provide virtual hosting infrastructure.
+of dynamic content in delivery systems, or provide a foundation for virtual hosting.
 
-In order to meet this vision, the Denali project introduced \emph{paravirtualization} by providing
+In order to meet this vision, the Denali project introduced \emph{para-virtualization} by providing
 a simplified and pared-down emulation of the hardware for VMs to interface with.  Denali also
-adopted complete isolation of guest VMs, and made VMs extremely lightweight, such that the system can
-support over 10,000 VMs on commodity machines. Denali diverges from many 
+adopted complete isolation of guest VMs, and made VMs extremely lightweight, so that the system could
+support over 10,000 VMs on commodity machines. Denali diverged from many 
 related projects by sacrificing backwards compatibility for its primary objectives,
-but its designers argue that this design tradeoff is well worth the benefits.
+but its designers argued that this design tradeoff was well worth the benefits.
 
 At the high level, Denali provides an isolation kernel (a small kernel operating system) running
 on top of x86 hardware. The kernel is designed to host many untrusted applications which are isolated
@@ -159,7 +159,7 @@ Denali's virtual architecture and implementation adhere to a separation between 
 so changes can be easily made. CPU virtualization holds a policy split into two elements, 
 a \emph{gatekeeper policy} to choose the subset of active VMs to admit into the system, and 
 a \emph{scheduler policy} to switch between active VMs. For simplicity, the authors use FIFO
-and round robin in the descirbed implementation, although other scheduling policies could
+and round robin in the described implementation, although other scheduling policies could
 be implemented.  The system provides a non-traditional interrupt model, where virtual interrupts
 for a VM are batched and delivered asynchronously when the VM is next scheduled.
 
@@ -174,7 +174,7 @@ corresponding VM is given focus by the scheduler.  Outgoing packets are processe
 round-robin manner from outgoing queues. Denali's TCP/IP stack runs at the user level, which
 has its drawbacks, since all packets have to cross the user/kernel boundary. However, the paper contains
 a packet dispatch evaluation, which suggests that cost of network virtualization is low and that the the
-driver itself is responsible for the majority of the costs of packet processing.
+driver itself is responsible for the majority of packet processing costs.
 
 The Denali paper provides a comprehensive evaluation of the isolation kernel running
 the Ilwaco operating system, with basic metrics like switching times between VMs, swap disk
@@ -213,10 +213,10 @@ Key contributions of this work include the design and implementation
 of a truly efficient nested VM for the x86 architecture, including novel
 techniques for \emph{multidimensional paging} and
 \emph{multi-level device assignment}.  The Turtles hypervisor is able to
-run unmodified guest hypervisors and OSes with a performance penalty of
+run unmodified guest hypervisors and OSes with a performance penalty
 as low as 6-8\%.  The paper also presents what the authors claim is the
 first thorough analysis and evaluation of nested hypervisor performance,
-with an eye to the identification and reduction of performance bottlenecks.
+with an eye to the identification and reduction of performance bottlenecks. % not sure about ``with an eye to''
 
 Turtles is designed for the x86 architecture, which subscribes to a
 single-level hardware support model.  This means that there are only two
@@ -317,10 +317,10 @@ other guests).  The algorithm uses a ``novel, lightweight'' tagging scheme to
 achieve this despite fluctuation in total capacity.  Previous attempts to solve
 this problem were not able to achieve both of these goals simultaneously.
 
-\begin{figure}[t]
-	\begin{center}
-		\includegraphics[width=2.5in]{images/mclock.png}
-	\end{center}
+\begin{figure}[ht!]
+	%\begin{center}
+		\includegraphics[width=2.65in]{images/mclock.png}
+	%\end{center}
 	\caption{The mClock algorithm works by tagging requests with a tag for
 		reservations, weights, and reservations, and then executing requests
 		in order of their tags.  (Figure courtest of \cite{ref:mclock})}
@@ -346,7 +346,7 @@ either a ``constraint-based phase'', in which some VM has not received
 capacity above its reservation, or a ``weight-based phase'', in which the
 next VM to be scheduled will be chosen by proportional share.  This is easily
 determined after the tagging:  if any VM $i$ has request $j$ such that the
-reservation tag $R(i, j)$ is less than the current time, than VM $i$ is currently
+reservation tag $R(i, j)$ is less than the current time, then VM $i$ is currently
 receiving less capacity than its reservation, and so the current phase is
 constraint based.  Otherwise, the phase is weight-based, and so the algorithm
 just picks a request with minimum weight tag $P(i, j)$ whose limit tag
@@ -504,7 +504,7 @@ importance of fairness; we will discuss this further in Section \ref{sec:relns/s
 
 Our papers are clearly divided by this metric:  Turtles is all about efficiency
 and performance, often at the cost of fairness.  The problem seems
-especially hard here when phrased in the nested context.  It seems perfectly logical that if
+especially hard here when phrased in the nested context.  It seems perfectly logical that
 a guest OS running in $L_2$ should only receive a fraction $\alpha$ of the resources allocated
 to its host in $L_1$, which in turn should only receive a percentage $\beta$ of the machine's
 total resources, then these two fractions should compound and our guest should end up with
@@ -532,10 +532,10 @@ The Time paper is somewhat agnostic to concerns of performance and fairness anyw
 since it deals more with the abstractions presented to client applications.  We
 will turn to this next.
 
-\subsection{Paravirtualization and Full Virtualization}
+\subsection{Para-virtualization and Full Virtualization}
 \label{sec:relns/para-full}
 
-The second tension seems to arise between the paradigms of \emph{paravirtualization}
+The second tension seems to arise between the paradigms of \emph{para-virtualization}
 and \emph{full virtualization}, which were introduced in Section \ref{sec:background}.
 Corporately-funded literature seems to have an eye more toward using as much
 commodity software as possible here, for the sake of lower adoption costs, while
@@ -543,10 +543,10 @@ academic papers seem more willing to consider modifying client software in
 appropriate situations.
 
 The split here is pretty clear as well: Denali, Xen, and Time all consider
-paravirtualization to be beneficial and even necessary in the right situations.
+para-virtualization to be beneficial and even necessary in the right situations.
 In Denali, the isolation kernel presents a modified and simplified hardware abstraction
 to its clients, which cleverly allows for some big wins in efficiency and performance
-as a side effect.  Xen claims that paravirtualization is necessary to ensure fairness
+as a side effect.  Xen claims that para-virtualization is necessary to ensure fairness
 and prevent starvation in process and I/O scheduling; one could argue, however, that
 this is no longer a concern due to the advent of newer virtualization-aware hardware
 (see Section \ref{sec:relns/hard-emul}).  The Time paper goes a step further and claims that
@@ -556,7 +556,7 @@ such as systems measurement, high-speed trading, and even video gaming.
 
 In contrast, the Turtles project argues for full virtualization and unmodified guest
 OSes and hypervisors.  In the paper, the argument for this goes back to the
-motivating goal of performance, though it was unclear to us why paravirtualization
+motivating goal of performance, though it was unclear to us why para-virtualization
 would have any negative impact here.  But it seems also that for any sort of large-scale
 commercial deployment of server virtualization technology, the ability to use commodity
 guests would be crucial in order to make adoption easy, and we consider this to also
@@ -569,7 +569,7 @@ scheduling problem is so difficult is because guest OSes have their own algorith
 for efficient disk scheduling, which generally don't play nice with each other.  If it
 were possible to modify the guest OS to disable these algorithms, so that the hypervisor
 could handle all disk scheduling decision, the difficulty of this problem could likely
-be reduced.  This seems to be an argument supportive of paravirtualization.
+be reduced.  This seems to be an argument in favor of para-virtualization.
 
 \subsection{Hardware Support and Software Emulation}
 \label{sec:relns/hard-emul}
@@ -605,7 +605,7 @@ The final tension we wish to consider is the question of scalability and designi
 for the Cloud.  We have observed
 that there is a commercial interest in developing super-scalable server virtualization,
 largely because it has found such a unique niche with the market growth of Cloud computing
-and Infrastructure-as-a-service (IAAS).  While academic research is not uninterested in the question
+and Infrastructure-as-a-service (IaaS).  While academic research is not uninterested in the question
 of scale or the Cloud use case, we do not feel that they are as much of a driving factor in this realm.
 
 We see this trend in the papers we have been discussing as well.  The Turtles paper presents
@@ -615,13 +615,13 @@ although it does not particularly market itself
 for scalability, is motivated by the Cloud-enabled scenario of many virtualized clients
 needing to schedule the use of a shared network disk.  Furthermore, the guarantees mClock
 makes about fairness, reservations, and proportional share are especially important
-in this scenario, as they allow IAAS providers to keep service-level agreements with
+in this scenario, as they allow IaaS providers to keep service-level agreements with
 their clients.  We find this particularly interesting, as it seems to indicate
 that in the Cloud, fairness and performance may find themselves on equal footing in
 terms of importance, despite what we have observed in Section \ref{sec:relns/perf-fair}.
 
 Interestingly, the Denali paper also has a particular eye to scalability, and a large
-portion of the evaluations section is devoted to demonstrating that the isolation kernel
+portion of the evaluation section is devoted to demonstrating that the isolation kernel
 performs well even when supporting over 10,000 VMs.  However, even in Denali, scalability
 is just one goal amongst many, and the paper does not really consider applications
 to Cloud computing, being written several years before the Cloud really became prominent.
@@ -638,10 +638,10 @@ in many ways just an added bonus, and is not really a motivational argument for 
 
 Having examined the recent literature along these four axes of tension, it is our belief
 that a clear trend has emerged in virtualization research.  We believe that as Cloud computing and
-IAAS continue to take off, research in this area will continue to trend toward what
+IaaS continue to take off, research in this area will continue to trend toward what
 is both popular and financially successful.  We expect that the majority of virtualization
-research will continue in the direction of full virtualization over paravirtualization,
-and that the Cloud-computing/IAAS scenario will become the driving use case.
+research will continue in the direction of full virtualization over para-virtualization,
+and that the Cloud-computing/IaaS scenario will become the driving use case.
 However, we think that as a result, fairness and performance will no longer be
 competing ends, but will in fact become equal goals in virtualized system design.
 This will be necessary in order for Cloud providers to meet their SLAs to their
